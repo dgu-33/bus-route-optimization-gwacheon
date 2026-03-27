@@ -25,7 +25,7 @@ Bus stop location data for Gwacheon city.
 ]
 ```
 
-**Used by:** `POI.py` (line 40), `generate_route.py` `main()` (line 1085)
+**Used by:** `POI.py`, `main.py`
 
 ---
 
@@ -57,7 +57,7 @@ Traffic node data (intersections, junctions) for Gwacheon city.
 }
 ```
 
-**Used by:** `generate_route.py` F7/F8 fitness functions (line 110)
+**Used by:** `main.py` (F7/F8 fitness functions via `algorithm.py`)
 
 ---
 
@@ -69,7 +69,7 @@ Road segment (link) data for Gwacheon city. If absent, the pipeline continues wi
 
 **Format:** Same GeoJSON envelope as 교통노드, with road coordinate arrays in `geometry.coordinates`.
 
-**Used by:** `generate_route.py` road graph construction (line 124)
+**Used by:** `main.py` (road graph construction)
 
 ---
 
@@ -87,7 +87,7 @@ Number of existing bus routes passing through each stop. Used to identify transf
 ]
 ```
 
-**Used by:** `generate_route.py` (line 102)
+**Used by:** `main.py` (F10 transfer score via `fitness.py`)
 
 ---
 
@@ -111,7 +111,7 @@ w10: 0.8
 poi_weights: {"학교": 0.3, "병원": 0.3, "음식점": 0.2, "카페": 0.2}
 ```
 
-Keys `w1`–`w10` correspond to fitness functions F1–F10 (F5 is unused and ignored).
+Keys `w1`–`w10` correspond to fitness functions F1–F10. F5 (유동인구) is excluded from the algorithm — `w5` is ignored if present.
 `poi_weights` keys must match the Korean POI category names used in `bus_stop.csv`.
 
 A sample file is provided as `llm_response_example.txt` in the project root.
