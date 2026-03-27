@@ -12,8 +12,6 @@ def load_reference_weights(filepath="llm_response.txt"):
                     weights[key.strip()] = float(val.strip())
                 except ValueError:
                     pass
-    # F5(w5)는 실질적으로 사용하지 않을 경우 자동 제거
-    weights.pop("w5", None)
     return weights
 
 
@@ -67,7 +65,7 @@ def load_bus_stops(json_data):
             print(f"경고: 정류장 {i} - 이름 없음 → 스킵")
             continue
 
-        stop_id = "stop_" + str(row.get("정류소id", f"{name}_{i}"))
+        stop_id = "stop_" + str(row.get("정류소id", row.get("정류소ID", f"{name}_{i}")))
         passengers = float(row.get("passengers", 100)) if row.get("passengers") else 100
         population = float(row.get("population", 500)) if row.get("population") else 500
 

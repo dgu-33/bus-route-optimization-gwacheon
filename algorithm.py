@@ -1,14 +1,16 @@
 import random
+from collections import Counter
 
 import numpy as np
 from geopy.distance import geodesic
 
-from function_1_to_5 import route_length, stop_distance, poi_score, subway_distance
-from function_6_to_10 import (
+from fitness import (
+    route_length, stop_distance, poi_score, subway_distance,
     normalize_stop_count, node_alignment_scores,
-    balanced_length_score, duplication_penalty_score, compute_transfer_score
+    balanced_length_score, compute_transfer_score,
+    duplication_penalty_score,
 )
-from graph import astar_path
+from pathfinding import astar_path
 
 
 def fitness(route, G, reference_weights, stops_data, pois_data, nodes_data, link_data, transfer_ids):
@@ -69,9 +71,6 @@ def fitness(route, G, reference_weights, stops_data, pois_data, nodes_data, link
     D_scale = reference_weights.get("D_scale", 1000)
     f4 = subway_distance(subway_dists, D_scale) if subway_dists else 0
 
-    # F5: 유동인구 (데이터 없음 → 0)
-    f5 = 0
-
     # F6: normalize_stop_count
     N_ideal = reference_weights.get("avg_stop_count", 12)
     N_max = reference_weights.get("max_stop_deviation", 5)
@@ -104,9 +103,9 @@ def fitness(route, G, reference_weights, stops_data, pois_data, nodes_data, link
     route_stop_ids = [stop for stop in route if "stop" in stop]
     f10 = compute_transfer_score(route_stop_ids, transfer_ids)
 
-    # 가중 합
+    # 가중 합 (F5 유동인구는 데이터 미확보로 제외, w3에 흡수)
     weights = reference_weights.get("fitness_weights", {
-        "w1": 0.100, "w2": 0.100, "w3": 0.150, "w4": 0.100, "w5": 0.050,
+        "w1": 0.100, "w2": 0.100, "w3": 0.200, "w4": 0.100,
         "w6": 0.100, "w7": 0.050, "w8": 0.150, "w9": 0.100, "w10": 0.100
     })
     fitness_score = (
@@ -114,7 +113,6 @@ def fitness(route, G, reference_weights, stops_data, pois_data, nodes_data, link
         weights["w2"] * f2 +
         weights["w3"] * f3 +
         weights["w4"] * f4 +
-        weights["w5"] * f5 +
         weights["w6"] * f6 +
         weights["w7"] * f7 +
         weights["w8"] * f8 +
@@ -123,6 +121,26 @@ def fitness(route, G, reference_weights, stops_data, pois_data, nodes_data, link
     )
 
     return max(0, fitness_score)
+
+
+def _apply_duplication_penalty(scored_population, w_dup):
+    """
+    노선 집합 전체에서 정류장 중복 빈도를 계산하고,
+    중복이 많은 노선의 적합도를 비례적으로 낮춘다.
+
+    - 동일 정류장이 2개 이상의 노선에 포함되면 중복으로 판정 (binary)
+    - adjusted_score = score * (1 - w_dup + w_dup * dup_score)
+      → dup_score=1.0(중복 없음): 점수 변동 없음
+      → dup_score=0.0(전체 중복): 점수를 (1 - w_dup) 배로 감소
+    """
+    stop_freq = Counter(stop for route, _ in scored_population for stop in route)
+    adjusted = []
+    for route, score in scored_population:
+        counts = [1 if stop_freq[stop] > 1 else 0 for stop in route]
+        dup_score = duplication_penalty_score([1.0] * len(route), counts)
+        adjusted_score = score * (1 - w_dup + w_dup * dup_score)
+        adjusted.append((route, adjusted_score))
+    return adjusted
 
 
 def genetic_algorithm(G, reference_weights, num_routes, stops_data, pois_data, nodes_data, link_data, transfer_ids, population_size=50, generations=100):
@@ -166,9 +184,12 @@ def genetic_algorithm(G, reference_weights, num_routes, stops_data, pois_data, n
         print("에러: 유효한 초기 노선을 생성하지 못했습니다.")
         return []
 
+    w_dup = reference_weights.get("w_dup", 0.2)
+
     # 유전 알고리즘 반복
     for gen in range(generations):
         scored_population = [(route, fitness(route, G, reference_weights, stops_data, pois_data, nodes_data, link_data, transfer_ids)) for route in population]
+        scored_population = _apply_duplication_penalty(scored_population, w_dup)
         scored_population.sort(key=lambda x: x[1], reverse=True)
         selection_size = population_size // 2
         fitness_values = [max(0, score) for _, score in scored_population]
@@ -231,5 +252,6 @@ def genetic_algorithm(G, reference_weights, num_routes, stops_data, pois_data, n
 
     # 최종 노선 선택
     final_scored_population = [(route, fitness(route, G, reference_weights, stops_data, pois_data, nodes_data, link_data, transfer_ids)) for route in population]
+    final_scored_population = _apply_duplication_penalty(final_scored_population, w_dup)
     final_scored_population.sort(key=lambda x: x[1], reverse=True)
     return [route for route, _ in final_scored_population[:num_routes]]

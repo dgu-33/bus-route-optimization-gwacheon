@@ -1,4 +1,4 @@
-from graph import astar_path
+from pathfinding import astar_path
 
 
 def schedule_buses(routes, G, num_buses):

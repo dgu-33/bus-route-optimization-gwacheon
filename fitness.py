@@ -1,5 +1,45 @@
+import math
+
+import numpy as np
+from geopy.distance import geodesic
 
 
+# ---------------------------------------------------------------------------
+# F1 – F4: Route-level scoring functions
+# ---------------------------------------------------------------------------
+
+def route_length(L, L_i, L_max):
+    score = 1 - ((L - L_i) / L_max) ** 2
+    return max(0, score)
+
+
+def stop_distance(D_list, D_ideal, sigma):
+    if len(D_list) < 2:
+        return 0
+    scores = [math.exp(-((d - D_ideal) ** 2) / (2 * sigma ** 2)) for d in D_list]
+    return sum(scores) / len(D_list)
+
+
+def poi_score(poi_list, weight_dict):
+    total_weighted = 0
+    total_count = 0
+    for poi in poi_list:
+        weight = weight_dict.get(poi['type'], 0)
+        total_weighted += weight * poi['count']
+        total_count += 1
+    return total_weighted / total_count if total_count > 0 else 0
+
+
+def subway_distance(subway_dists, D_scale):
+    if not subway_dists:
+        return 0
+    scores = [math.exp(-d / D_scale) for d in subway_dists]
+    return sum(scores) / len(subway_dists)
+
+
+# ---------------------------------------------------------------------------
+# F6 – F10: Network-level scoring functions
+# ---------------------------------------------------------------------------
 
 def normalize_stop_count(N_stop, N_ideal=30, N_max=15):
     """
@@ -13,11 +53,6 @@ def normalize_stop_count(N_stop, N_ideal=30, N_max=15):
     score = 1 - diff**2
     return max(0.0, min(1.0, score))
 
-
-
-
-from geopy.distance import geodesic
-import numpy as np
 
 def node_alignment_scores(stops, nodes, node_type=None, radius=50, scale=100):
     """
@@ -51,25 +86,6 @@ def balanced_length_score(length_m, L_ideal=10000, L_max=15000):
     교통링크 정규화 함수
     각 도로 링크의 실제 길이(length_m)가 이상적인 길이(L_ideal)에 얼마나 가까운지를
     정규화하여 0~1 사이의 점수로 반환합니다. 1에 가까울수록 이상 범위에 가까움을 의미합니다.
-    Parameters
-    ----------
-    length_m :
-        도로 링크의 실제 길이(m). GeoJSON에서 계산된 거리 값입니다.
-    L_ideal :
-        선호하는 이상적인 링크 길이(m). 이 값에 가까울수록 높은 점수를 부여합니다.
-    L_max :
-        이상적 길이로부터 허용 가능한 최대 편차(m). 편차가 이 범위를 넘으면 점수는 0으로 수렴합니다.
-    Returns
-    -------
-    score : float
-        0.0에서 1.0까지의 정규화된 점수.
-        - length_m == L_ideal → 1.0
-        - length_m == L_ideal ± L_max → 0.0
-        - 그 외에는 1 - diff^2 계산 후 [0,1] 범위로 클리핑(clamp)됩니다.
-    Notes
-    -----
-    - diff = (length_m - L_ideal) / L_max로 정의하며, 편차 비율(diff)이 클수록 벌점이 제곱으로 커집니다.
-    - max(0.0, min(1.0, score))를 사용해 결과를 [0,1]로 제한합니다.
     """
     diff = (length_m - L_ideal) / L_max
     score = 1 - diff ** 2
@@ -79,26 +95,15 @@ def balanced_length_score(length_m, L_ideal=10000, L_max=15000):
 def duplication_penalty_score(weights, counts):
     """
     지역 공정성 적합도 함수
-    Parameters
-    ----------
-    weights : list of float
-        각 요소 i에 대한 중복 가중치 w_dup_i 리스트
-    counts : list of int
-        각 요소 i에 대한 중복 횟수 count_i 리스트
-        weights와 길이가 같아야 함
-    Returns
-    -------
-    float
-        0.0 ~ 1.0 사이의 점수.
-        - 중복이 전혀 없으면(score = 1.0)
-        - 중복이 많아질수록 score는 0에 가까워짐
+    weights: 각 요소 i에 대한 중복 가중치 w_dup_i 리스트
+    counts: 각 요소 i에 대한 중복 횟수 count_i 리스트 (weights와 길이가 같아야 함)
+    반환값: 0.0 ~ 1.0 사이의 점수 (중복이 없으면 1.0, 많을수록 0에 가까워짐)
+
     """
     if len(weights) != len(counts):
         raise ValueError("weights와 counts의 길이가 같아야 합니다.")
     N = len(weights)
-    total_penalty = 0.0
-    for w, c in zip(weights, counts):
-        total_penalty += w * c
+    total_penalty = sum(w * c for w, c in zip(weights, counts))
     score = 1.0 - total_penalty / N
     return max(0.0, min(1.0, score))
 

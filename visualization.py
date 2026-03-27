@@ -5,7 +5,7 @@ import networkx as nx
 import numpy as np
 
 from api_client import KAKAO_JS_API_KEY
-from graph import astar_path
+from pathfinding import astar_path
 
 
 def display_routes(G, routes, schedule, frequencies, roads_data, kakao_api_key=None):

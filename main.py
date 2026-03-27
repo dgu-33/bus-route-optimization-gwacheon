@@ -1,6 +1,5 @@
 import json
 import time
-from datetime import datetime
 
 import networkx as nx
 from geopy.distance import geodesic
