@@ -1,0 +1,34 @@
+# Secrets
+.env
+
+# Claude Code project instructions (not for public repo)
+CLAUDE.md
+
+# Python
+.venv
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.idea
+.vscode
+
+# OS
+.DS_Store
+
+# Data (excluded due to size or licensing)
+교통노드/
+교통링크/
+정류장위치/
+통과노선/
+
+# LLM output (user-specific, not reproducible)
+llm_response.txt
+
+# Generated output
+bus_routes.html
+
+# API cache (city-specific, regenerated on first run)
+path_cache.json
+

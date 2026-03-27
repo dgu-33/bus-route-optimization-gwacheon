@@ -1,0 +1,15 @@
+# Example LLM weight file — copy to llm_response.txt and adjust values.
+# Each line is: key: float_value
+# w1–w10 correspond to fitness functions F1–F10 (F5 is unused).
+# poi_weights keys must match Korean POI category names in bus_stop.csv.
+
+w1: 0.8
+w2: 0.6
+w3: 0.9
+w4: 0.5
+w6: 0.7
+w7: 0.5
+w8: 0.4
+w9: 0.6
+w10: 0.8
+poi_weights: {"학교": 0.3, "병원": 0.3, "음식점": 0.2, "카페": 0.2, "편의점": 0.15, "공공기관": 0.25, "지하철역": 0.4, "문화시설": 0.1}
