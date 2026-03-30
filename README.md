@@ -9,12 +9,12 @@
 버스 정류장 목록과 도시 데이터를 입력받아 다음 기법을 조합하여 최적 버스 노선을 생성합니다:
 
 - **A\*** — 도로 network 기반 최단 경로 탐색
-- **Genetic algorithm** — 다목적 노선 최적화
+- **유전 알고리즘** — 다목적 노선 최적화
 - **K-means clustering** — 정류장 지역 유형 레이블링
 - **LLM 기반 weight 조정** — LLM prompt로 도출한 fitness function weight
 - **Kakao Map API** — 도로 network 데이터 수집 및 interactive map 출력
 
-9개의 fitness function (F1–F4, F6–F10)이 각 후보 노선을 노선 길이, 정류장 간격, POI 커버리지, 지하철 근접성, 정류장 수, 도로 정렬, 환승 연결성 등의 기준으로 평가합니다. F5 (유동인구)는 데이터 미확보로 제외되었습니다. 세대별 평가 후 정류장 중복 페널티가 노선 집합 전체에 추가로 적용됩니다.
+9개의 적합도 함수 (F1–F4, F6–F10)가 각 후보 노선을 노선 길이, 정류장 간격, POI 커버리지, 지하철 근접성, 정류장 수, 도로 정렬, 환승 연결성 등의 기준으로 평가합니다. F5 (유동인구)는 데이터 미확보로 제외되었습니다. 세대별 평가 후 정류장 중복 페널티가 노선 집합 전체에 추가로 적용됩니다.
 
 ---
 
@@ -31,8 +31,8 @@ bus_route_algorithm/
 ├── visualization.py        # Kakao Map HTML 생성 및 노선 요약 출력
 ├── api_client.py           # Kakao API 호출 및 path cache 관리
 ├── data_loader.py          # 데이터 로딩 함수 모음 (JSON, CSV, weight)
-├── POI.py                  # Kakao API를 통한 POI 데이터 수집 스크립트 (1회용)
-├── bus_stop.csv            # 정류장별 POI 수집 결과 (포함됨)
+├── POI.py                  # Kakao API를 통한 POI 데이터 수집 스크립트 
+├── bus_stop.csv            # 정류장별 POI 수집 결과 
 ├── llm_response_example.txt # LLM weight 파일 예시 — llm_response.txt로 복사하여 사용
 ├── .env.example            # API key template — .env로 복사하여 사용
 ├── requirements.txt
